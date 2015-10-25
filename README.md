@@ -1,4 +1,4 @@
-# compojure-intro
+# konu-notes
 
 ## Development
 
@@ -10,7 +10,7 @@ To start a web server for the application, run:
 
     lein ring server
 
-or run ```main-``` from ```compojure-intro.server``` namespace in repl
+or run ```main-``` from ```konu-notes.server``` namespace in repl
 
 ## Packaking
 
@@ -28,7 +28,7 @@ or run ```main-``` from ```compojure-intro.server``` namespace in repl
 
 ## License
 
-Copyright &copy; 2013 Metosin Oy
+Copyright &copy; 2015 Konu
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
