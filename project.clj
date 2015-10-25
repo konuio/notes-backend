@@ -1,4 +1,4 @@
-(defproject compojure-intro "0.1.0-SNAPSHOT"
+(defproject konu-notes "0.1.0-SNAPSHOT"
   :description "Compojure Intro"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
@@ -7,10 +7,12 @@
                  [ring/ring-json "0.2.0"]
                  [ring/ring-jetty-adapter "1.2.1"]
                  [com.novemberain/monger "1.7.0"]
-                 [compojure "1.1.6"]]
+                 [compojure "1.1.6"]
+                 [com.novemberain/monger "1.5.0"]
+                 [org.clojure/data.json "0.2.6"]]
   :plugins [[lein-ring "0.8.10"]]
-  :ring {:handler compojure-intro.handler/app}
-  :main compojure-intro.server
+  :ring {:handler konu-notes.handler/app}
+  :main konu-notes.server
   :profiles {:uberjar {:aot :all}
              :dev {:plugins [[lein2-eclipse "2.0.0"]
                              [lein-idea "1.0.1"]]

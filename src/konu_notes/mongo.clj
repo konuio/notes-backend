@@ -1,4 +1,4 @@
-(ns compojure-intro.mongo
+(ns konu-notes.mongo
   (:require [monger.operators :refer :all]
             [monger.core :as m]
             [monger.collection :as mc]
