@@ -12,7 +12,7 @@ To start a web server for the application, run:
 
 or run ```main-``` from ```konu-notes.server``` namespace in repl
 
-## Packaking
+## Packaging
 
     lein do clean, uberjar
 
@@ -29,6 +29,3 @@ or run ```main-``` from ```konu-notes.server``` namespace in repl
 ## License
 
 Copyright &copy; 2015 Konu
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
