@@ -7,7 +7,7 @@
 (def to-json json/generate-string)
 
 (defn init-db [name]
-
+  (println "connecting db")
   (mg/connect!)
   (mg/set-db! (mg/get-db name)))
 

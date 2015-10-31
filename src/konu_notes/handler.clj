@@ -5,6 +5,7 @@
             [ring.util.response :refer [response content-type]]
             [cheshire.core :as cheshire]
             [konu-notes.note :as note]
+            [monger.json]
             [compojure.core :refer :all]))
 
 (defn json [form]
@@ -26,7 +27,7 @@
 
 (defroutes app-routes
   ; static route
-  (GET "/" [] "Hello World")
+  (GET "/" [] "Welcome to Konu Notes!")
 
   ; query paramters
   (GET "/hello" [name] (str "hello, " name))
@@ -49,8 +50,8 @@
                            :name "Shopping"}
                           ]}))
 
-  ;  (POST "/notes" {data :params}
-  ;        (json-response (note/create (json data))))
+  (POST "/note" {data :params}
+        (json (note/create data)))
 
   (GET "/note" {data :params}
        (json {:notes [{:id 1
