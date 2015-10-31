@@ -54,48 +54,7 @@
         (json (note/create data)))
 
   (GET "/note" {data :params}
-       (json {:notes [{:id 1
-                       :title "Shopping List"
-                       :notebook 4
-                       :data "Milk, apples, oranges"},
-                      {:id 2
-                       :title "Shopping List2"
-                       :notebook 4
-                       :data "asdfasdfasdf"},
-                      {:id 3
-                       :title "Shopping List3"
-                       :notebook 4
-                       :data "qwerqwerqwer"},
-                      {:id 4
-                       :title "Shopping List4"
-                       :notebook 4
-                       :data "Milk, apples, oranges"},
-                      {:id 5
-                       :title "todos"
-                       :notebook 1
-                       :data "konu notes"},
-                      {:id 9
-                       :title "birthday"
-                       :notebook 1
-                       :data "plan party"},
-                      {:id 10
-                       :title "doctor appointments"
-                       :notebook 1
-                       :data "teeth cleaning"},
-                      {:id 6
-                       :title "project"
-                       :notebook 2
-                       :data "zxcvzxcvzxcvz"},
-                      {:id 7
-                       :title "Spain"
-                       :notebook 3
-                       :data "have tapas"},
-                      {:id 8
-                       :title "Italy"
-                       :notebook 3
-                       :data "eat Italian food"}
-
-                      ]}))
+       (json (note/search data)))
 
   (GET "/notebook/:id" [id]
        (json

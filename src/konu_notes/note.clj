@@ -14,6 +14,9 @@
 (defn fetch [id]
   (mc/find-one-as-map "notes" { :_id id }))
 
+(defn search [params]
+  (mc/find-maps "notes" params))
+
 (defn create [newPost]
   (println "making new post")
   (println (str newPost))
