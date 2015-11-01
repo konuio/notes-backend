@@ -44,6 +44,18 @@
               :notebook "1"
               :title "Shopping List"}))
 
+  (POST "/note" {data :params}
+        (json (note/create data)))
+
+  (PUT "/note" {data :params}
+       (json (note/update-note data)))
+
+  (GET "/note" {data :params}
+       (json (note/search-note data)))
+
+  (DELETE "/note/:id" [id]
+          (json (note/delete-note id)))
+
   (GET "/notebook" []
        (json {:notebooks [{:id 1
                            :name "Personal"},
@@ -54,17 +66,6 @@
                           {:id 4
                            :name "Shopping"}
                           ]}))
-
-  (POST "/note" {data :params}
-        (json (note/create data)))
-
-  (PUT "/note" {data :params}
-      ; (println "updated")
-       ;(json (note/update-note data)))
-       (str note/update-note data))
-
-  (GET "/note" {data :params}
-       (json (note/search-note data)))
 
   (GET "/notebook/:id" [id]
        (json

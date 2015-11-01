@@ -40,10 +40,11 @@
     (map keywordify-keys maps)))
 
 (defn update-note [data]
-  (println "this shoudl bprint")
-  (mc/update-by-id "notes" (ObjectId. (get-in data [:_id])) data))
+  ; Do not include the id in updated values.
+  (mc/update-by-id "notes" (ObjectId. (get-in data [:_id])) (dissoc data :_id)))
 
- ;(let [found-note (fetch-note (get-in data [:_id]))]
+(defn delete-note [id]
+  (mc/remove-by-id "notes" (ObjectId. id)))
 
 ;(defn destroy-note [id]
 ;  (destroy! :notes
