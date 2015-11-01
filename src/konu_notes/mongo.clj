@@ -5,7 +5,7 @@
             [monger.json])
   (:import [org.bson.types ObjectId]))
 
-(def uri "mongodb://127.0.0.1/clojure-intro")
+(def uri "mongodb://127.0.0.1/konu-notes")
 
 (comment
   ;; connect
