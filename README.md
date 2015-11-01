@@ -8,7 +8,7 @@ try `lein eclipse`or `lein idea`.
 
 To start a web server for the application, run:
 
-    lein ring server
+    lein run
 
 or run ```main-``` from ```konu-notes.server``` namespace in repl
 

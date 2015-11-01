@@ -7,6 +7,7 @@
             [konu-notes.note :as note]
             [monger.json]
             [compojure.core :refer :all]))
+           ; [ring.middleware.cors :refer [wrap-cors]])
 
 (defn json [form]
   (-> form
@@ -16,7 +17,7 @@
 
 (defn json-response [data & [status]]
   {:status (or status 200)
-   :headers {"Content-Type" "application/json"}
+   :headers {"Content-Type" "application/json" "Access-Control-Allow-Origin:" "http://localhost:8888"}
    :body (cheshire/generate-string data)})
 
 (defn ping-route [version]
@@ -34,13 +35,13 @@
 
   ; path parameters returning json
   (GET "/note/:id" [id]
-       (json {:id "1"
+       (json-response {:id "1"
               :data "milk, apples, oranges"
               :notebook "1"
               :title "Shopping List"}))
 
   (GET "/notebook" []
-       (json {:notebooks [{:id 1
+       (json-response {:notebooks [{:id 1
                            :name "Personal"},
                           {:id 2
                            :name "Work"},
@@ -53,8 +54,13 @@
   (POST "/note" {data :params}
         (json (note/create data)))
 
+  (PUT "/note" {data :params}
+      ; (println "updated")
+       ;(json (note/update-note data)))
+       (str note/update-note data))
+
   (GET "/note" {data :params}
-       (json (note/search data)))
+       (json (note/search-note data)))
 
   (GET "/notebook/:id" [id]
        (json
@@ -129,3 +135,5 @@
    middleware/wrap-json-body
    middleware/wrap-json-params
    #_middleware/wrap-json-response))
+  ; (wrap-cors my-routes :access-control-allow-origin [#"http://127.0.0.1:8888"]
+  ;                :access-control-allow-methods [:get :put :post :delete])))
