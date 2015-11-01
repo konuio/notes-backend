@@ -2,23 +2,27 @@
   (:require [compojure.handler :as handler]
             [compojure.route :as route]
             [ring.middleware.json :as middleware]
-            [ring.util.response :refer [response content-type]]
+            [ring.util.response :as ring]
             [cheshire.core :as cheshire]
             [konu-notes.note :as note]
             [monger.json]
             [compojure.core :refer :all]))
            ; [ring.middleware.cors :refer [wrap-cors]])
 
+(defn json-response [data & [status]]
+  {:status (or status 200)
+   :headers {"Content-Type" "application/json" "Access-Control-Allow-Origin" "http://localhost:8888"}
+   :body (cheshire/generate-string data)})
+
 (defn json [form]
   (-> form
       cheshire/encode
-      response
-      (content-type "application/json; charset=utf-8")))
+      ring/response
+      (ring/content-type "application/json; charset=utf-8")
+      json-response))
+    ; TODO consolidate response handling
+    ;  (ring/header "access-control-allow-origin" "http://localhost:8888")))
 
-(defn json-response [data & [status]]
-  {:status (or status 200)
-   :headers {"Content-Type" "application/json" "Access-Control-Allow-Origin:" "http://localhost:8888"}
-   :body (cheshire/generate-string data)})
 
 (defn ping-route [version]
   (GET "/ping" []
@@ -35,13 +39,13 @@
 
   ; path parameters returning json
   (GET "/note/:id" [id]
-       (json-response {:id "1"
+       (json {:id "1"
               :data "milk, apples, oranges"
               :notebook "1"
               :title "Shopping List"}))
 
   (GET "/notebook" []
-       (json-response {:notebooks [{:id 1
+       (json {:notebooks [{:id 1
                            :name "Personal"},
                           {:id 2
                            :name "Work"},
