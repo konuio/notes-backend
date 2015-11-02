@@ -20,9 +20,6 @@
       cheshire/encode
       ring/response
       (ring/content-type "application/json; charset=utf-8")))
-    ; TODO consolidate response handling
-    ;  (ring/header "access-control-allow-origin" "http://localhost:8888")))
-
 
 (defn ping-route [version]
   (GET "/ping" []
@@ -140,6 +137,5 @@
     handler/site
     middleware/wrap-json-body
     middleware/wrap-json-params
-    ;middleware/wrap-json-response
     (wrap-cors :access-control-allow-origin #"http://localhost:8888"
                :access-control-allow-methods [:get :put :post :delete])))
