@@ -6,7 +6,7 @@
       [ring.util.response :as ring]
       [cheshire.core :as cheshire]
       [konu-notes.note :as note]
-      [monger.json]
+      [monger.json] ; Serialization support for Mongo types.
       [compojure.core :refer :all]
       [ring.middleware.cors :refer [wrap-cors]]))
 
@@ -47,9 +47,8 @@
   (POST "/note" {data :params}
         (json (note/create data)))
 
-; TODO get update working, it doesn't like the declaration of params here
-  (PUT "/note/:id" [id] {data :params}
-       (json (note/update-note id data)))
+  (PUT "/note/:id" {data :params}
+       (json (note/update-note (get data :id) (dissoc data :id))))
 
   (GET "/note" {data :params}
        (json (note/search-note data)))
