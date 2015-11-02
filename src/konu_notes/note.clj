@@ -39,9 +39,9 @@
     merge
     (map keywordify-keys maps)))
 
-(defn update-note [data]
+(defn update-note [id data]
   ; Do not include the id in updated values.
-  (mc/update-by-id "notes" (ObjectId. (get-in data [:_id])) (dissoc data :_id)))
+  (mc/update-by-id "notes" (ObjectId. id) (dissoc data :_id)))
 
 (defn delete-note [id]
   (mc/remove-by-id "notes" (ObjectId. id)))
