@@ -46,9 +46,9 @@
 
   (POST "/note" {data :params}
         (json (note/create data)))
-
-  (PUT "/note" {data :params}
-       (json (note/update-note data)))
+; TODO get update working, it doesn't like the declaration of params here
+  (PUT "/note/:id" [id] {data :params}
+       (json (note/update-note id data)))
 
   (GET "/note" {data :params}
        (json (note/search-note data)))
