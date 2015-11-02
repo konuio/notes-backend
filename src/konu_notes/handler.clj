@@ -1,25 +1,25 @@
 (ns konu-notes.handler
-  (:require [compojure.handler :as handler]
-            [compojure.route :as route]
-            [ring.middleware.json :as middleware]
-            [ring.util.response :as ring]
-            [cheshire.core :as cheshire]
-            [konu-notes.note :as note]
-            [monger.json]
-            [compojure.core :refer :all]))
-           ; [ring.middleware.cors :refer [wrap-cors]])
+    (:require
+      [compojure.handler :as handler]
+      [compojure.route :as route]
+      [ring.middleware.json :as middleware]
+      [ring.util.response :as ring]
+      [cheshire.core :as cheshire]
+      [konu-notes.note :as note]
+      [monger.json]
+      [compojure.core :refer :all]
+      [ring.middleware.cors :refer [wrap-cors]]))
 
 (defn json-response [data & [status]]
   {:status (or status 200)
-   :headers {"Content-Type" "application/json" "Access-Control-Allow-Origin" "http://localhost:8888"}
+   :headers {"Content-Type" "application/json"}
    :body (cheshire/generate-string data)})
 
 (defn json [form]
   (-> form
       cheshire/encode
       ring/response
-      (ring/content-type "application/json; charset=utf-8")
-      json-response))
+      (ring/content-type "application/json; charset=utf-8")))
     ; TODO consolidate response handling
     ;  (ring/header "access-control-allow-origin" "http://localhost:8888")))
 
@@ -46,6 +46,7 @@
 
   (POST "/note" {data :params}
         (json (note/create data)))
+
 ; TODO get update working, it doesn't like the declaration of params here
   (PUT "/note/:id" [id] {data :params}
        (json (note/update-note id data)))
@@ -54,7 +55,8 @@
        (json (note/search-note data)))
 
   (DELETE "/note/:id" [id]
-          (json (note/delete-note id)))
+          (note/delete-note id)
+          (json {:_id (:_id id)}))
 
   (GET "/notebook" []
        (json {:notebooks [{:id 1
@@ -135,10 +137,10 @@
 
 (def app
   (->
-   app-routes
-   handler/site
-   middleware/wrap-json-body
-   middleware/wrap-json-params
-   #_middleware/wrap-json-response))
-  ; (wrap-cors my-routes :access-control-allow-origin [#"http://127.0.0.1:8888"]
-  ;                :access-control-allow-methods [:get :put :post :delete])))
+    app-routes
+    handler/site
+    middleware/wrap-json-body
+    middleware/wrap-json-params
+    ;middleware/wrap-json-response
+    (wrap-cors :access-control-allow-origin #"http://localhost:8888"
+               :access-control-allow-methods [:get :put :post :delete])))
