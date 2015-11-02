@@ -10,13 +10,4 @@
 (comment
   ;; connect
   (m/connect-via-uri! uri)
-
-  ;; remove all
-  (mc/remove :pizza)
-
-  ;; add some pizzas
-  (mc/insert :pizza {:name "quatro"})
-  (mc/insert :pizza {:name "opera"})
-
-  ;; list 'em
-  (mc/find-maps :pizza))
+)

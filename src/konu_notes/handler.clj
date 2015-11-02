@@ -6,7 +6,7 @@
       [ring.util.response :as ring]
       [cheshire.core :as cheshire]
       [konu-notes.note :as note]
-      [monger.json]
+      [monger.json] ; Serialization support for Mongo types.
       [compojure.core :refer :all]
       [ring.middleware.cors :refer [wrap-cors]]))
 
@@ -20,9 +20,6 @@
       cheshire/encode
       ring/response
       (ring/content-type "application/json; charset=utf-8")))
-    ; TODO consolidate response handling
-    ;  (ring/header "access-control-allow-origin" "http://localhost:8888")))
-
 
 (defn ping-route [version]
   (GET "/ping" []
@@ -47,9 +44,8 @@
   (POST "/note" {data :params}
         (json (note/create data)))
 
-  (PUT "/note" {data :params}
-       (note/update-note data)
-       (json {:_id (:_id data)}))
+  (PUT "/note/:id" {data :params}
+       (json (note/update-note (get data :id) (dissoc data :id))))
 
   (GET "/note" {data :params}
        (json (note/search-note data)))
@@ -141,6 +137,5 @@
     handler/site
     middleware/wrap-json-body
     middleware/wrap-json-params
-    ;middleware/wrap-json-response
     (wrap-cors :access-control-allow-origin #"http://localhost:8888"
                :access-control-allow-methods [:get :put :post :delete])))
