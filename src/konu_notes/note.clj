@@ -7,23 +7,22 @@
 (def to-json json/generate-string)
 
 (defn init-db [name]
-
+  (println "connecting db")
   (mg/connect!)
   (mg/set-db! (mg/get-db name)))
 
-(defn fetch [id]
+(defn fetch-note [id]
   (mc/find-one-as-map "notes" { :_id id }))
+
+(defn search-note [params]
+  (mc/find-maps "notes" params))
 
 (defn create [newPost]
   (println "making new post")
   (println (str newPost))
   (let [id (ObjectId.)]
-   ;(mc/insert-and-return "notes" (assoc newPost :_id id))
     (mc/insert-and-return "notes"  newPost)
 ))
-
-;(defn add-task [task]
-;  (insert! :notes (assoc task :_id (uuid))))
 
 (defn keywordify-keys
   "Returns a map otherwise same as the argument but
@@ -40,18 +39,15 @@
     merge
     (map keywordify-keys maps)))
 
-;(defn update-task [id task]
-;  (let [task-in-db (find-task id)]
-;    (update! :notes
-;      task-in-db
-;      (merge-with-kw-keys task-in-db task))))
+(defn update-note [id data]
+  ; Do not include the id in updated values.
+  (get
+   (mc/update-by-id "notes" (ObjectId. id) (dissoc data :_id))
+   :err))
 
-;(defn destroy-note [id]
-;  (destroy! :notes
-;    (find-task id)))
+(defn delete-note [id]
+  (mc/remove-by-id "notes" (ObjectId. id)))
+
 
 (defn find-all-notes []
   (mc/find-maps "notes"))
-
-;(defn find-note [id]
-;  (fetch-one :notes :where {:_id id}))
