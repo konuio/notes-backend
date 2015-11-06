@@ -1,14 +1,21 @@
 (ns konu-notes.handler
-    (:require
-      [compojure.handler :as handler]
-      [compojure.route :as route]
-      [ring.middleware.json :as middleware]
-      [ring.util.response :as ring]
-      [cheshire.core :as cheshire]
-      [konu-notes.note :as note]
-      [monger.json] ; Serialization support for Mongo types.
-      [compojure.core :refer :all]
-      [ring.middleware.cors :refer [wrap-cors]]))
+  (:require
+   [compojure.handler :as handler]
+   [compojure.route :as route]
+   [ring.middleware.json :as middleware]
+   [ring.util.response :as ring]
+   [cheshire.core :as cheshire]
+   [konu-notes.note :as note]
+  ; [konu-notes.authentication :as auth]
+   [monger.json] ; Serialization support for Mongo types.
+   [compojure.core :refer :all]
+   [ring.middleware.cors :refer [wrap-cors]]
+   [cemerick.friend :as friend]
+   (cemerick.friend [workflows :as workflows]
+                    [credentials :as creds])
+   [ring.middleware.session :refer [wrap-session]]
+   [ring.middleware.params :refer [wrap-params]]
+   [ring.middleware.keyword-params :refer [wrap-keyword-params]]))
 
 (defn json-response [data & [status]]
   {:status (or status 200)
@@ -27,19 +34,7 @@
               :date (java.util.Date.)
               :version version})))
 
-(defroutes app-routes
-  ; static route
-  (GET "/" [] "Welcome to Konu Notes!")
-
-  ; query paramters
-  (GET "/hello" [name] (str "hello, " name))
-
-  ; path parameters returning json
-  (GET "/note/:id" [id]
-       (json {:id "1"
-              :data "milk, apples, oranges"
-              :notebook "1"
-              :title "Shopping List"}))
+(defroutes user-routes
 
   (POST "/note" {data :params}
         (json (note/create data)))
@@ -49,6 +44,13 @@
 
   (GET "/note" {data :params}
        (json (note/search-note data)))
+
+  ; path parameters returning json
+  (GET "/note/:id" [id]
+       (json {:id "1"
+              :data "milk, apples, oranges"
+              :notebook "1"
+              :title "Shopping List"}))
 
   (DELETE "/note/:id" [id]
           (note/delete-note id)
@@ -119,7 +121,24 @@
           "Error"
 
           )))
+  )
 
+(defroutes app-routes
+
+  ;; requires user role
+  (context "/user" request
+           (friend/wrap-authorize user-routes #{::user}))
+
+  ;; requires admin role
+  (GET "/admin" request (friend/authorize #{::admin}
+                                          #_any-code-requiring-admin-authorization
+                                          "Admin page."))
+
+  ; static route
+  (GET "/" [] "Welcome to Konu Notes!")
+
+  (GET "/login" request "Login page.")
+  (friend/logout (ANY "/logout" request (ring.util.response/redirect "/")))
   ; contexts /api/v2/ping etc.
   (context "/api" []
            (context "/v:version" [version]
@@ -131,11 +150,25 @@
   ; nothing matched
   (route/not-found "Not Found"))
 
+; a dummy in-memory user "database"
+(def users {"root" {:username "root"
+                    :password (creds/hash-bcrypt "admin_password")
+                    :roles #{::admin}}
+            "jane" {:username "jane"
+                    :password (creds/hash-bcrypt "user_password")
+                    :roles #{::user}}})
+
 (def app
   (->
-    app-routes
-    handler/site
-    middleware/wrap-json-body
-    middleware/wrap-json-params
-    (wrap-cors :access-control-allow-origin #"http://localhost:8888"
-               :access-control-allow-methods [:get :put :post :delete])))
+   app-routes
+   (friend/authenticate {:credential-fn (partial creds/bcrypt-credential-fn users)
+                         :workflows [(workflows/interactive-form)]})
+   (wrap-keyword-params)
+   (wrap-params)
+   (wrap-session)
+   handler/site
+   middleware/wrap-json-body
+   middleware/wrap-json-params
+
+   (wrap-cors :access-control-allow-origin #"http://localhost:8888"
+              :access-control-allow-methods [:get :put :post :delete])))

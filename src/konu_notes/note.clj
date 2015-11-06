@@ -1,15 +1,13 @@
 (ns konu-notes.note
   (:require [monger.collection :as mc]
             [monger.core :as mg]
+            [monger.conversion :as mconversion]
             [cheshire.core :as json])
   (:import [org.bson.types ObjectId]))
 
 (def to-json json/generate-string)
 
-(defn init-db [name]
-  (println "connecting db")
-  (mg/connect!)
-  (mg/set-db! (mg/get-db name)))
+; Mapper methods for notes.
 
 (defn fetch-note [id]
   (mc/find-one-as-map "notes" { :_id id }))
@@ -21,7 +19,7 @@
   (println "making new post")
   (println (str newPost))
   (let [id (ObjectId.)]
-    (mc/insert-and-return "notes"  newPost)
+    (mc/insert-and-return "notes" newPost)
 ))
 
 (defn keywordify-keys
@@ -47,7 +45,6 @@
 
 (defn delete-note [id]
   (mc/remove-by-id "notes" (ObjectId. id)))
-
 
 (defn find-all-notes []
   (mc/find-maps "notes"))
