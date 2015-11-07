@@ -37,7 +37,7 @@
 (defroutes user-routes
 
   (POST "/note" {data :params}
-        (json (note/create data)))
+        (json (note/create-note data)))
 
   (PUT "/note/:id" {data :params}
        (json (note/update-note (get data :id) (dissoc data :id))))

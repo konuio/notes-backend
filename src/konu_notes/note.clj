@@ -17,7 +17,7 @@
 (defn search-note [params]
   (mapper/search get-namespace params))
 
-(defn create [newPost]
+(defn create-note [newPost]
   (mapper/create get-namespace newPost))
 
 (defn update-note [id data]
