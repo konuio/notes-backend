@@ -8,7 +8,8 @@
                  [ring/ring-json "0.4.0"]
                  [ring/ring-jetty-adapter "1.4.0"]
                  [compojure "1.4.0"]
-                 [com.novemberain/monger "3.0.1"]
+                 ;[com.novemberain/monger "3.0.1"] ; may not work with clojure 1.5.1
+                 [com.novemberain/monger "1.5.0"]
                  [org.clojure/data.json "0.2.6"]
                  [ring-cors "0.1.7"]
                  [com.cemerick/friend "0.2.1"]]

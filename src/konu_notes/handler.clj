@@ -6,7 +6,6 @@
    [ring.util.response :as ring]
    [cheshire.core :as cheshire]
    [konu-notes.note :as note]
-  ; [konu-notes.authentication :as auth]
    [monger.json] ; Serialization support for Mongo types.
    [compojure.core :refer :all]
    [ring.middleware.cors :refer [wrap-cors]]
@@ -15,7 +14,8 @@
                     [credentials :as creds])
    [ring.middleware.session :refer [wrap-session]]
    [ring.middleware.params :refer [wrap-params]]
-   [ring.middleware.keyword-params :refer [wrap-keyword-params]]))
+   [ring.middleware.keyword-params :refer [wrap-keyword-params]])
+  (:import [org.bson.types ObjectId]))
 
 (defn json-response [data & [status]]
   {:status (or status 200)
@@ -47,10 +47,7 @@
 
   ; path parameters returning json
   (GET "/note/:id" [id]
-       (json {:id "1"
-              :data "milk, apples, oranges"
-              :notebook "1"
-              :title "Shopping List"}))
+       (json (note/search-note (json {:_id (ObjectId. id)}))))
 
   (DELETE "/note/:id" [id]
           (note/delete-note id)
@@ -137,8 +134,11 @@
   ; static route
   (GET "/" [] "Welcome to Konu Notes!")
 
-  (GET "/login" request "Login page.")
+  (GET "/login" [] (ring.util.response/file-response "login.html" {:root "resources"}))
+  ;(GET "/login" request "Login page.")
+
   (friend/logout (ANY "/logout" request (ring.util.response/redirect "/")))
+
   ; contexts /api/v2/ping etc.
   (context "/api" []
            (context "/v:version" [version]
@@ -157,6 +157,8 @@
             "jane" {:username "jane"
                     :password (creds/hash-bcrypt "user_password")
                     :roles #{::user}}})
+
+(derive ::admin ::user)
 
 (def app
   (->
