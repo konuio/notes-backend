@@ -6,6 +6,8 @@
    [ring.util.response :as ring]
    [cheshire.core :as cheshire]
    [konu-notes.note :as note]
+   [konu-notes.authentication :as authentication]
+   [konu-notes.notebook :as notebook]
    [monger.json] ; Serialization support for Mongo types.
    [compojure.core :refer :all]
    [ring.middleware.cors :refer [wrap-cors]]
@@ -17,6 +19,7 @@
    [ring.middleware.keyword-params :refer [wrap-keyword-params]])
   (:import [org.bson.types ObjectId]))
 
+;; TODO middleware for returning 401 not authorized
 (defn json-response [data & [status]]
   {:status (or status 200)
    :headers {"Content-Type" "application/json"}
@@ -123,13 +126,17 @@
 (defroutes app-routes
 
   ;; requires user role
-  (context "/user" request
-           (friend/wrap-authorize user-routes #{::user}))
+  (context "/authenticated" request
+           (friend/wrap-authorize user-routes ["user"]))
 
   ;; requires admin role
   (GET "/admin" request (friend/authorize #{::admin}
                                           #_any-code-requiring-admin-authorization
                                           "Admin page."))
+
+  ; Account creation.
+  (POST "/user" {data :params}
+        (json (authentication/create-user data)))
 
   ; static route
   (GET "/" [] "Welcome to Konu Notes!")
@@ -150,6 +157,10 @@
   ; nothing matched
   (route/not-found "Not Found"))
 
+
+(defn get-users [arg]
+  (authentication/find-all-users))
+
 ; a dummy in-memory user "database"
 (def users {"root" {:username "root"
                     :password (creds/hash-bcrypt "admin_password")
@@ -163,8 +174,13 @@
 (def app
   (->
    app-routes
-   (friend/authenticate {:credential-fn (partial creds/bcrypt-credential-fn users)
+   (friend/authenticate {:credential-fn (partial creds/bcrypt-credential-fn
+                                                 (fn [id]
+                                                   (when-let [found-user
+                                                              (authentication/get-user-by-username id)]
+                                                     found-user)))
                          :workflows [(workflows/interactive-form)]})
+
    (wrap-keyword-params)
    (wrap-params)
    (wrap-session)

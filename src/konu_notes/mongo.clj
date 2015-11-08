@@ -12,17 +12,3 @@
   (mg/set-db! (mg/get-db name))
   (let [conn  (mg/connect)
         db    (mg/get-db conn name)]))
-
-;;(defn init-db [name]
-; (do
-;   (println "connecting db")
-;   (mg/connect)
-;   (mg/set-db (mg/get-db name))))
-; (let [conn  (mg/connect)
-;       db    (mg/get-db conn name)]
-;  (session-store db "sessions"))))
-
-;(comment
-;; connect
-;  (m/connect-via-uri! uri)
-;  )
