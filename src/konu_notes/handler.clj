@@ -56,71 +56,22 @@
           (note/delete-note id)
           (json {:_id (:_id id)}))
 
-  (GET "/notebook" []
-       (json {:notebooks [{:id 1
-                           :name "Personal"},
-                          {:id 2
-                           :name "Work"},
-                          {:id 3
-                           :name "Vacation"},
-                          {:id 4
-                           :name "Shopping"}
-                          ]}))
+  (POST "/notebook" {data :params}
+        (json (notebook/create-notebook data)))
+
+  (PUT "/notebook/:id" {data :params}
+       (json (notebook/update-notebook (get data :id) (dissoc data :id))))
+
+  (GET "/notebook" {data :params}
+       (json (notebook/search-notebook data)))
 
   (GET "/notebook/:id" [id]
-       (json
-        (case id
-          "1"
-          {:notes [{:id 5
-                    :title "todos"
-                    :notebook 1
-                    :data "konu notes"},
-                   {:id 9
-                    :title "birthday"
-                    :notebook 1
-                    :data "plan party"},
-                   {:id 10
-                    :title "doctor appointments"
-                    :notebook 1
-                    :data "teeth cleaning"}]}
+       (json (notebook/search-notebook (json {:_id (ObjectId. id)}))))
 
-          "2"
-          {:notes[ {:id 6
-                    :title "project"
-                    :notebook 2
-                    :data "zxcvzxcvzxcvz"}]}
+  (DELETE "/notebook/:id" [id]
+          (notebook/delete-notebook id)
+          (json {:_id (:_id id)}))
 
-          "3"
-          {:notes [{:id 7
-                    :title "Spain"
-                    :notebook 3
-                    :data "have tapas"},
-                   {:id 8
-                    :title "Italy"
-                    :notebook 3
-                    :data "eat Italian food"}]}
-
-          "4"
-          {:notes[{:id 1
-                   :title "Shopping List"
-                   :notebook 4
-                   :data "Milk, apples, oranges"},
-                  {:id 2
-                   :title "Shopping List2"
-                   :notebook 4
-                   :data "asdfasdfasdf"},
-                  {:id 3
-                   :title "Shopping List3"
-                   :notebook 4
-                   :data "qwerqwerqwer"},
-                  {:id 4
-                   :title "Shopping List4"
-                   :notebook 4
-                   :data "Milk, apples, oranges"}]}
-
-          "Error"
-
-          )))
   )
 
 (defroutes app-routes
@@ -141,7 +92,6 @@
   (GET "/" [] "Welcome to Konu Notes!")
 
   (GET "/login" [] (ring.util.response/file-response "login.html" {:root "resources"}))
-  ;(GET "/login" request "Login page.")
 
   (friend/logout (ANY "/logout" request (ring.util.response/redirect "/")))
 
@@ -171,7 +121,8 @@
                                                    (when-let [found-user
                                                               (authentication/get-user-by-username id)]
                                                      found-user)))
-                         :workflows [(workflows/interactive-form)]})
+                         :workflows [(workflows/interactive-form)]
+                         :unauthenticated-handler (constantly {:status 401})})
 
    (wrap-keyword-params)
    (wrap-params)

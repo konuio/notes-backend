@@ -41,8 +41,11 @@
    (mc/update-by-id collection (ObjectId. id) (dissoc data :_id))
    :err))
 
-(defn delete [collection id]
+(defn delete-by-id [collection id]
   (mc/remove-by-id collection (ObjectId. id)))
+
+(defn remove-from-collection [collection params]
+  (mc/remove collection params))
 
 (defn find-all [collection]
   (mc/find-maps collection))
