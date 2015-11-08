@@ -1,15 +1,25 @@
 (ns konu-notes.handler
-    (:require
-      [compojure.handler :as handler]
-      [compojure.route :as route]
-      [ring.middleware.json :as middleware]
-      [ring.util.response :as ring]
-      [cheshire.core :as cheshire]
-      [konu-notes.note :as note]
-      [monger.json] ; Serialization support for Mongo types.
-      [compojure.core :refer :all]
-      [ring.middleware.cors :refer [wrap-cors]]))
+  (:require
+   [compojure.handler :as handler]
+   [compojure.route :as route]
+   [ring.middleware.json :as middleware]
+   [ring.util.response :as ring]
+   [cheshire.core :as cheshire]
+   [konu-notes.note :as note]
+   [konu-notes.authentication :as authentication]
+   [konu-notes.notebook :as notebook]
+   [monger.json] ; Serialization support for Mongo types.
+   [compojure.core :refer :all]
+   [ring.middleware.cors :refer [wrap-cors]]
+   [cemerick.friend :as friend]
+   (cemerick.friend [workflows :as workflows]
+                    [credentials :as creds])
+   [ring.middleware.session :refer [wrap-session]]
+   [ring.middleware.params :refer [wrap-params]]
+   [ring.middleware.keyword-params :refer [wrap-keyword-params]])
+  (:import [org.bson.types ObjectId]))
 
+;; TODO middleware for returning 401 not authorized
 (defn json-response [data & [status]]
   {:status (or status 200)
    :headers {"Content-Type" "application/json"}
@@ -27,28 +37,20 @@
               :date (java.util.Date.)
               :version version})))
 
-(defroutes app-routes
-  ; static route
-  (GET "/" [] "Welcome to Konu Notes!")
-
-  ; query paramters
-  (GET "/hello" [name] (str "hello, " name))
-
-  ; path parameters returning json
-  (GET "/note/:id" [id]
-       (json {:id "1"
-              :data "milk, apples, oranges"
-              :notebook "1"
-              :title "Shopping List"}))
+(defroutes user-routes
 
   (POST "/note" {data :params}
-        (json (note/create data)))
+        (json (note/create-note data)))
 
   (PUT "/note/:id" {data :params}
        (json (note/update-note (get data :id) (dissoc data :id))))
 
   (GET "/note" {data :params}
        (json (note/search-note data)))
+
+  ; path parameters returning json
+  (GET "/note/:id" [id]
+       (json (note/search-note (json {:_id (ObjectId. id)}))))
 
   (DELETE "/note/:id" [id]
           (note/delete-note id)
@@ -119,6 +121,29 @@
           "Error"
 
           )))
+  )
+
+(defroutes app-routes
+
+  ;; requires user role
+  (context "/authenticated" request
+           (friend/wrap-authorize user-routes authentication/user-role))
+
+  ;; requires admin role
+  (GET "/admin" request (friend/authorize authentication/admin-role
+                                          "Admin page."))
+
+  ; Account creation with user-level privilege.
+  (POST "/user" {data :params}
+        (json (authentication/create-user data)))
+
+  ; static route
+  (GET "/" [] "Welcome to Konu Notes!")
+
+  (GET "/login" [] (ring.util.response/file-response "login.html" {:root "resources"}))
+  ;(GET "/login" request "Login page.")
+
+  (friend/logout (ANY "/logout" request (ring.util.response/redirect "/")))
 
   ; contexts /api/v2/ping etc.
   (context "/api" []
@@ -131,11 +156,29 @@
   ; nothing matched
   (route/not-found "Not Found"))
 
+
+(defn get-users [arg]
+  (authentication/find-all-users))
+
+;; TODO allow heirarchical privileges?
+;(derive ::admin ::user)
+
 (def app
   (->
-    app-routes
-    handler/site
-    middleware/wrap-json-body
-    middleware/wrap-json-params
-    (wrap-cors :access-control-allow-origin #"http://localhost:8888"
-               :access-control-allow-methods [:get :put :post :delete])))
+   app-routes
+   (friend/authenticate {:credential-fn (partial creds/bcrypt-credential-fn
+                                                 (fn [id]
+                                                   (when-let [found-user
+                                                              (authentication/get-user-by-username id)]
+                                                     found-user)))
+                         :workflows [(workflows/interactive-form)]})
+
+   (wrap-keyword-params)
+   (wrap-params)
+   (wrap-session)
+   handler/site
+   middleware/wrap-json-body
+   middleware/wrap-json-params
+
+   (wrap-cors :access-control-allow-origin #"http://localhost:8888"
+              :access-control-allow-methods [:get :put :post :delete])))

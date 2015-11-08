@@ -1,4 +1,4 @@
-(ns konu-notes.note
+(ns konu-notes.notebook
   (:require [konu-notes.mapper :as mapper]
             [monger.collection :as mc]
             [monger.core :as mg]
@@ -9,22 +9,22 @@
 
 ; Mapper methods for notes.
 (def get-namespace
-  "notes")
+  "notebooks")
 
-(defn fetch-note [id]
+(defn fetch-notebook [id]
   (mapper/fetch get-namespace id))
 
-(defn search-note [params]
+(defn search-notebook [params]
   (mapper/search get-namespace params))
 
-(defn create-note [newPost]
+(defn create-notebook [newPost]
   (mapper/create get-namespace newPost))
 
-(defn update-note [id data]
+(defn update-notebook [id data]
   (mapper/update get-namespace id data))
 
-(defn delete-note [id]
+(defn delete-notebook [id]
   (mapper/delete get-namespace id))
 
-(defn find-all-notes []
+(defn find-all-notebooks []
   (mapper/find-all get-namespace))
