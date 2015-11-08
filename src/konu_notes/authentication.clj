@@ -21,6 +21,12 @@
 (def get-namespace
   "users")
 
+(def user-role
+  "user")
+
+(def admin-role
+  "admin")
+
 (defn fetch-user [id]
   (mapper/fetch get-namespace id))
 
@@ -30,7 +36,7 @@
 (defn create-user [newUser]
   (let [hashedUser {:username (get newUser :username)
                     :password (creds/hash-bcrypt (get newUser :password))
-                    :roles #{::user}}]
+                    :roles user-role}]
 
     (print hashedUser)
     (mapper/create get-namespace hashedUser)))

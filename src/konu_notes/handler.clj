@@ -127,14 +127,13 @@
 
   ;; requires user role
   (context "/authenticated" request
-           (friend/wrap-authorize user-routes ["user"]))
+           (friend/wrap-authorize user-routes authentication/user-role))
 
   ;; requires admin role
-  (GET "/admin" request (friend/authorize #{::admin}
-                                          #_any-code-requiring-admin-authorization
+  (GET "/admin" request (friend/authorize authentication/admin-role
                                           "Admin page."))
 
-  ; Account creation.
+  ; Account creation with user-level privilege.
   (POST "/user" {data :params}
         (json (authentication/create-user data)))
 
@@ -161,15 +160,8 @@
 (defn get-users [arg]
   (authentication/find-all-users))
 
-; a dummy in-memory user "database"
-(def users {"root" {:username "root"
-                    :password (creds/hash-bcrypt "admin_password")
-                    :roles #{::admin}}
-            "jane" {:username "jane"
-                    :password (creds/hash-bcrypt "user_password")
-                    :roles #{::user}}})
-
-(derive ::admin ::user)
+;; TODO allow heirarchical privileges?
+;(derive ::admin ::user)
 
 (def app
   (->
