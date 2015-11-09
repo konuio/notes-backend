@@ -1,5 +1,6 @@
 (ns konu-notes.notebook
   (:require [konu-notes.mapper :as mapper]
+            [konu-notes.note :as note]
             [monger.collection :as mc]
             [monger.core :as mg]
             [monger.conversion :as mconversion]
@@ -7,7 +8,7 @@
   (:import [org.bson.types ObjectId]))
 
 
-; Mapper methods for notes.
+; Mapper methods for notebooks.
 (def get-namespace
   "notebooks")
 
@@ -24,7 +25,9 @@
   (mapper/update get-namespace id data))
 
 (defn delete-notebook [id]
-  (mapper/delete get-namespace id))
+  (mapper/delete-by-id get-namespace id)
+  ; Delete associated notes.
+  (mapper/remove-from-collection note/get-namespace {:notebook id}))
 
 (defn find-all-notebooks []
   (mapper/find-all get-namespace))

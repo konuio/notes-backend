@@ -24,7 +24,7 @@
   (mapper/update get-namespace id data))
 
 (defn delete-note [id]
-  (mapper/delete get-namespace id))
+  (mapper/delete-by-id get-namespace id))
 
 (defn find-all-notes []
   (mapper/find-all get-namespace))
