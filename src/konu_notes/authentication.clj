@@ -45,31 +45,33 @@
   (mapper/update get-namespace id data))
 
 (defn delete-user [id]
-  (mapper/delete get-namespace id))
+  (mapper/delete-by-id get-namespace id))
 
 (defn find-all-users []
   (mapper/find-all get-namespace))
 
 
-; customize authentication
-(defn do-login [req]
-  (let [credential-fn (get-in req [::friend/auth-config :credential-fn])]
-    (make-auth (credential-fn (select-keys (:params req) [:username :password])))))
+; Customize authentication.
+;; (defn do-login [req]
+;;   (let [credential-fn (get-in req [::friend/auth-config :credential-fn])]
+;;     (make-auth (credential-fn (select-keys (:params req) [:username :password])))))
 
-(defn password-workflow [req]
-  (when (and (= (:request-method req) :post)
-             (= (:uri req) "/login"))
-    (do-login req)))
+;; (defn password-workflow [req]
+;;   (when (and (= (:request-method req) :post)
+;;              (= (:uri req) "/login"))
+;;     (do-login req)))
 
 (defn get-user-by-username [username]
-  (print "searching for username")
+  (print (str "event=login_attempt, username=" username))
   (flush)
   (let [found-user (search-user {:username username})]
     (first found-user)))
 
-(defn password-credential-fn [creds-map]
-  (when-let [user (get-user-by-username (get creds-map :username))]
-    (print "found attempted user")
-    (when (= (:password user) (creds/hash-bcrypt (get creds-map :password)))
-      {:identity (:_id user) :roles #{::user} :user user})))
+;; Customize credential fxn here.
+;; (defn password-credential-fn [creds-map]
+;;   (when-let [user (get-user-by-username (get creds-map :username))]
+;;     (print (str "event=login_success, username=" (get creds-map :username)))
+;;     (flush)
+;;     (when (= (:password user) (creds/hash-bcrypt (get creds-map :password)))
+;;       {:identity (:_id user) :roles #{::user} :user user})))
 
