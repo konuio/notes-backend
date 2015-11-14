@@ -122,6 +122,7 @@
                                                               (authentication/get-user-by-username id)]
                                                      found-user)))
                          :workflows [(workflows/interactive-form)]
+                         :redirect-on-auth? false
                          :unauthenticated-handler (constantly {:status 401})})
 
    (wrap-keyword-params)
