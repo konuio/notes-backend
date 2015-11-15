@@ -121,8 +121,9 @@
                                                    (when-let [found-user
                                                               (authentication/get-user-by-username id)]
                                                      found-user)))
-                         :workflows [(workflows/interactive-form)]
-                         :redirect-on-auth? false
+                         :workflows [(workflows/interactive-form
+                                      :redirect-on-auth? false
+                                      :login-failure-handler (fn [req] {:body {:errors {:username ["invalid username or password"]}} :status 401}))]
                          :unauthenticated-handler (constantly {:status 401})})
 
    (wrap-keyword-params)
