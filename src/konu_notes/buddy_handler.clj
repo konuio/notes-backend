@@ -23,7 +23,7 @@
    [buddy.auth.backends.token :refer [token-backend]]
    [buddy.auth.middleware :refer [wrap-authentication wrap-authorization]])
   (:import [org.bson.types ObjectId])
-   (:gen-class))
+  (:gen-class))
 
 
 
@@ -90,8 +90,8 @@
     (if valid?
       (let [token (random-token)]
         (swap! tokens assoc (keyword token) (keyword username))
-        {:token token})
-      (bad-request {:message "Incorrect username or password."}))))
+        (json-response {:token token} 200))
+      (json-response {:message "Incorrect username or password."} 400))))
 
 (defn parse-header
   [headers ^String header-name]
@@ -131,9 +131,9 @@
        (println request)
        (flush)
        (if-not (authenticated? request)
-       (throw-unauthorized)
-       (ok {:status "Logged" :message (str "hello logged user"
-                                           (:identity request))}))))
+         (throw-unauthorized)
+         (ok {:status "Logged" :message (str "hello logged user"
+                                             (:identity request))}))))
   )
 (defn ping-route [version]
   (GET "/ping" []
@@ -186,13 +186,13 @@
 
 (defroutes app-routes
 
-;;   ;; requires user role
-;;   (context "/authenticated" request
-;;            (friend/wrap-authorize user-routes authentication/user-role))
+  ;;   ;; requires user role
+  ;;   (context "/authenticated" request
+  ;;            (friend/wrap-authorize user-routes authentication/user-role))
 
-;;   ;; requires admin role
-;;   (GET "/admin" request (friend/authorize authentication/admin-role
-;;                                           "Admin page."))
+  ;;   ;; requires admin role
+  ;;   (GET "/admin" request (friend/authorize authentication/admin-role
+  ;;                                           "Admin page."))
 
   (GET "/testLoggedIn" [request] (json (testLoggedIn request)))
   ; Account creation with user-level privilege.
@@ -206,7 +206,7 @@
   (GET "/login" [] (ring.util.response/file-response "login.html" {:root "resources"}))
 
   (POST "/login" {data :params}
-        (json-response (login data)))
+        (login data))
 
 
   ; contexts /api/v2/ping etc.
@@ -219,7 +219,7 @@
 
   ; nothing matched
   (route/not-found "Not Found")
-)
+  )
 
 (defn get-users [arg]
   (authentication/find-all-users))
@@ -242,3 +242,4 @@
    ;; Allow origin.
    (wrap-cors :access-control-allow-origin #"http://localhost:8888"
               :access-control-allow-methods [:get :put :post :delete])))
+
