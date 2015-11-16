@@ -5,6 +5,7 @@
    [compojure.core :refer :all]
    [cheshire.core :as cheshire]
    [cemerick.friend :as friend]
+   [buddy.hashers :as hashers]
    [cemerick.friend.workflows :refer [make-auth]]
    (cemerick.friend [workflows :as workflows]
                     [credentials :as creds])))
@@ -35,7 +36,14 @@
 
 (defn create-user [newUser]
   (let [hashedUser {:username (get newUser :username)
-                    :password (creds/hash-bcrypt (get newUser :password))
+                    ; :password (creds/hash-bcrypt (get newUser :password))
+                    :password (hashers/encrypt (get newUser :password)
+                                               {:alg :bcrypt+sha512 :salt
+                                                (byte-array
+                                                 [(byte 0) (byte 1) (byte 2) (byte 3)
+                                                  (byte 0) (byte 1) (byte 2) (byte 3)
+                                                  (byte 0) (byte 1) (byte 2) (byte 3)
+                                                  (byte 0) (byte 1) (byte 2) (byte 3)])})
                     :roles user-role}]
 
     (print hashedUser)

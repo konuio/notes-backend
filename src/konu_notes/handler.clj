@@ -16,7 +16,8 @@
                     [credentials :as creds])
    [ring.middleware.session :refer [wrap-session]]
    [ring.middleware.params :refer [wrap-params]]
-   [ring.middleware.keyword-params :refer [wrap-keyword-params]])
+   [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+   [buddy.auth.backends.token :refer [token-backend]])
   (:import [org.bson.types ObjectId]))
 
 ;; TODO middleware for returning 401 not authorized
