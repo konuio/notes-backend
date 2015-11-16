@@ -90,7 +90,7 @@
     (if valid?
       (let [token (random-token)]
         (swap! tokens assoc (keyword token) (keyword username))
-        (ok {:token token}))
+        {:token token})
       (bad-request {:message "Incorrect username or password."}))))
 
 (defn parse-header
@@ -206,7 +206,7 @@
   (GET "/login" [] (ring.util.response/file-response "login.html" {:root "resources"}))
 
   (POST "/login" {data :params}
-        (json (login data)))
+        (json-response (login data)))
 
 
   ; contexts /api/v2/ping etc.
