@@ -1,5 +1,6 @@
 (ns konu-notes.buddy_handler
   (:require
+   [clojure.string :as string]
    [compojure.handler :as handler]
    [compojure.route :as route]
    [ring.middleware.json :as middleware]
@@ -74,9 +75,6 @@
   (flush)
   (let [username (get request :username)
         password (get request :password)
-        ;valid? (some-> authdata
-        ;               (get (keyword username))
-        ;               (= password))]
         valid? (< 0 (count (authentication/search-user {:username username
                                                         :password (hashers/encrypt password
                                                                                    {:alg :bcrypt+sha512 :salt
@@ -85,8 +83,6 @@
                                                                                       (byte 0) (byte 1) (byte 2) (byte 3)
                                                                                       (byte 0) (byte 1) (byte 2) (byte 3)
                                                                                       (byte 0) (byte 1) (byte 2) (byte 3)])}) })))]
-
-
     (if valid?
       (let [token (random-token)]
         (swap! tokens assoc (keyword token) (keyword username))
@@ -103,19 +99,18 @@
   [request]
   (println " in parse header")
   (print request)
-  (flush)
-  (print (parse-header (get request :headers) "authorization"))
-  (flush)
-  (some->> (parse-header (get request :headers) "authorization")
-           (re-find (re-pattern (str "^" "Token" " (.+)$")))
-           (second)))
+  (last (parse-header (get request :headers) "authorization")))
+;  (some->> (string/join " " (parse-header (get request :headers) "authorization"))
+;           (re-find (re-pattern (str "^" "Token" " (.+)$")))
+;           (second)))
 
 (defn logout
   [request]
   (if-not (authenticated? request)
     (throw-unauthorized)
     (let [token (parse-authorization-header request)]
-      (swap! tokens dissoc @tokens (key token))
+      (println (str "found token for logout " token))
+      (swap! tokens dissoc @tokens (keyword token))
       (ok {:message (str "You have been signed out.")}))))
 
 (defn tokenAuthFxn
@@ -136,7 +131,7 @@
     (throw-unauthorized)
     (ok {:status "Logged" :message (str "hello logged user"
                                         (:identity request))})))
-; )
+
 (defn ping-route [version]
   (GET "/ping" []
        (json {:ping "pong"
@@ -148,64 +143,6 @@
 ;;     (throw-unauthorized)
 ;;     (fxn params)))
 
-
-(defroutes user-routes
-;; TODO refactor
-  (POST "/note" {data :params}
-        (if-not (authenticated? data)
-          (throw-unauthorized)
-          (json (note/create-note data))))
-
-  (PUT "/note/:id" {data :params}
-       (if-not (authenticated? data)
-         (throw-unauthorized)
-         (json (note/update-note (get data :id) (dissoc data :id)))))
-
-  (GET "/note" {data :params}
-       (if-not (authenticated? data)
-         (throw-unauthorized)
-         (json (note/search-note data))))
-
-  (GET "/note/:id" {data :params}
-       (if-not (authenticated? data)
-         (throw-unauthorized)
-         (json (note/search-note (json {:_id (ObjectId. (:id data))})))))
-
-  (DELETE "/note/:id" {data :params}
-          (if-not (authenticated? data)
-            (throw-unauthorized)
-            (do
-            (note/delete-note (:id data))
-            (json {:_id (:_id (:id data))}))))
-
-  (POST "/notebook" {data :params}
-        (if-not (authenticated? data)
-          (throw-unauthorized)
-          (json (notebook/create-notebook data))))
-
-  (PUT "/notebook/:id" {data :params}
-       (if-not (authenticated? data)
-         (throw-unauthorized)
-         (json (notebook/update-notebook (get data :id) (dissoc data :id)))))
-
-  (GET "/notebook" {data :params}
-       (if-not (authenticated? data)
-         (throw-unauthorized)
-         (json (notebook/search-notebook data))))
-
-  (GET "/notebook/:id" {data :params}
-       (if-not (authenticated? data)
-         (throw-unauthorized)
-         (json (notebook/search-notebook (json {:_id (ObjectId. (:id data))})))))
-
-  (DELETE "/notebook/:id" {data :params}
-          (if-not (authenticated? data)
-            (throw-unauthorized)
-            (do
-            (notebook/delete-notebook (:id data))
-            (json {:_id (:_id (:id data))}))))
-
-  )
 
 (defroutes app-routes
 
@@ -273,7 +210,8 @@
   (POST "/user" {data :params}
         (json (authentication/create-user data)))
 
-  (POST "/logout" {:keys [headers params body] :as request} (logout request))
+  (POST "/logout" {:keys [headers params body] :as request}
+        (json (logout request)))
 
   (GET "/" [] "Welcome to Konu Notes!")
 
