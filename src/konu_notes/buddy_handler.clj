@@ -101,7 +101,12 @@
 ;; Authorization: Token 123abc
 (defn parse-authorization-header
   [request]
-  (some->> (parse-header request "authorization")
+  (println " in parse header")
+  (print request)
+  (flush)
+  (print (parse-header (get request :headers) "authorization"))
+  (flush)
+  (some->> (parse-header (get request :headers) "authorization")
            (re-find (re-pattern (str "^" "Token" " (.+)$")))
            (second)))
 
@@ -127,14 +132,11 @@
 (defn testLoggedIn
   [request]
 
-  (do (
-       (println request)
-       (flush)
-       (if-not (authenticated? request)
-         (throw-unauthorized)
-         (ok {:status "Logged" :message (str "hello logged user"
-                                             (:identity request))}))))
-  )
+  (if-not (authenticated? request)
+    (throw-unauthorized)
+    (ok {:status "Logged" :message (str "hello logged user"
+                                        (:identity request))})))
+; )
 (defn ping-route [version]
   (GET "/ping" []
        (json {:ping "pong"
@@ -148,53 +150,125 @@
 
 
 (defroutes user-routes
-
+;; TODO refactor
   (POST "/note" {data :params}
-        (json (note/create-note data)))
+        (if-not (authenticated? data)
+          (throw-unauthorized)
+          (json (note/create-note data))))
 
   (PUT "/note/:id" {data :params}
-       (json (note/update-note (get data :id) (dissoc data :id))))
+       (if-not (authenticated? data)
+         (throw-unauthorized)
+         (json (note/update-note (get data :id) (dissoc data :id)))))
 
   (GET "/note" {data :params}
-       (json (note/search-note data)))
+       (if-not (authenticated? data)
+         (throw-unauthorized)
+         (json (note/search-note data))))
 
-  ; path parameters returning json
-  (GET "/note/:id" [id]
-       (json (note/search-note (json {:_id (ObjectId. id)}))))
+  (GET "/note/:id" {data :params}
+       (if-not (authenticated? data)
+         (throw-unauthorized)
+         (json (note/search-note (json {:_id (ObjectId. (:id data))})))))
 
-  (DELETE "/note/:id" [id]
-          (note/delete-note id)
-          (json {:_id (:_id id)}))
+  (DELETE "/note/:id" {data :params}
+          (if-not (authenticated? data)
+            (throw-unauthorized)
+            (do
+            (note/delete-note (:id data))
+            (json {:_id (:_id (:id data))}))))
 
   (POST "/notebook" {data :params}
-        (json (notebook/create-notebook data)))
+        (if-not (authenticated? data)
+          (throw-unauthorized)
+          (json (notebook/create-notebook data))))
 
   (PUT "/notebook/:id" {data :params}
-       (json (notebook/update-notebook (get data :id) (dissoc data :id))))
+       (if-not (authenticated? data)
+         (throw-unauthorized)
+         (json (notebook/update-notebook (get data :id) (dissoc data :id)))))
 
   (GET "/notebook" {data :params}
-       (json (notebook/search-notebook data)))
+       (if-not (authenticated? data)
+         (throw-unauthorized)
+         (json (notebook/search-notebook data))))
 
-  (GET "/notebook/:id" [id]
-       (json (notebook/search-notebook (json {:_id (ObjectId. id)}))))
+  (GET "/notebook/:id" {data :params}
+       (if-not (authenticated? data)
+         (throw-unauthorized)
+         (json (notebook/search-notebook (json {:_id (ObjectId. (:id data))})))))
 
-  (DELETE "/notebook/:id" [id]
-          (notebook/delete-notebook id)
-          (json {:_id (:_id id)}))
+  (DELETE "/notebook/:id" {data :params}
+          (if-not (authenticated? data)
+            (throw-unauthorized)
+            (do
+            (notebook/delete-notebook (:id data))
+            (json {:_id (:_id (:id data))}))))
 
   )
 
 (defroutes app-routes
 
-  ;;   ;; requires user role
-  ;;   (context "/authenticated" request
-  ;;            (friend/wrap-authorize user-routes authentication/user-role))
+  (POST "/note" request
+        (do
+          (println request)
+        (if-not (authenticated? request)
+          (throw-unauthorized)
+          (json (note/create-note (:params request))))))
 
-  ;;   ;; requires admin role
-  ;;   (GET "/admin" request (friend/authorize authentication/admin-role
-  ;;                                           "Admin page."))
+  (PUT "/note/:id" request
+       (if-not (authenticated? request)
+         (throw-unauthorized)
+         (json (note/update-note (get (:params request) :id) (dissoc (:params request) :id)))))
 
-  (GET "/testLoggedIn" [request] (json (testLoggedIn request)))
+  (GET "/note" request
+       (do
+         (println request)
+       (if-not (authenticated? request)
+         (throw-unauthorized)
+         (json (note/search-note (:params request))))))
+
+  (GET "/note/:id" request
+       (if-not (authenticated? request)
+         (throw-unauthorized)
+         (json (note/search-note (json {:_id (ObjectId. (:id (:params request)))})))))
+
+  (DELETE "/note/:id" request
+          (if-not (authenticated? request)
+            (throw-unauthorized)
+            (do
+            (note/delete-note (:id (:params request)))
+            (json {:_id (:_id (:id (:params request)))}))))
+
+  (POST "/notebook" request
+        (if-not (authenticated? (:params request))
+          (throw-unauthorized)
+          (json (notebook/create-notebook (:params request)))))
+
+  (PUT "/notebook/:id" request
+       (if-not (authenticated? request)
+         (throw-unauthorized)
+         (json (notebook/update-notebook (get (:params request) :id) (dissoc (:params request) :id)))))
+
+  (GET "/notebook" request
+       (if-not (authenticated? request)
+         (throw-unauthorized)
+         (json (notebook/search-notebook (:params request)))))
+
+  (GET "/notebook/:id" request
+       (if-not (authenticated? request)
+         (throw-unauthorized)
+         (json (notebook/search-notebook (json {:_id (ObjectId. (:id (:params request)))})))))
+
+  (DELETE "/notebook/:id" request
+          (if-not (authenticated? request)
+            (throw-unauthorized)
+            (do
+            (notebook/delete-notebook (:id (:params request)))
+            (json {:_id (:_id (:id (:params request)))}))))
+
+  (GET "/testLoggedIn" request
+       (json (testLoggedIn request)))
   ; Account creation with user-level privilege.
   (POST "/user" {data :params}
         (json (authentication/create-user data)))
@@ -223,10 +297,6 @@
 
 (defn get-users [arg]
   (authentication/find-all-users))
-
-;; TODO allow heirarchical privileges?
-;(derive ::admin ::user)
-
 
 (def app
   (->
