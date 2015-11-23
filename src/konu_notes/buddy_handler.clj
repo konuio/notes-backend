@@ -7,6 +7,7 @@
    [ring.util.response :as ring]
    [cheshire.core :as cheshire]
    [konu-notes.note :as note]
+   [konu-notes.mailer :as mailer]
    [konu-notes.authentication :as authentication]
    [konu-notes.notebook :as notebook]
    [monger.json] ; Serialization support for Mongo types.
@@ -185,6 +186,10 @@
 
 
 (defroutes public-routes
+
+
+  (POST "/signup" {data :params}
+        (json (mailer/send-signup-email (:email data))))
 
   ; Account creation with user-level privilege.
   (POST "/user" {data :params}

@@ -14,6 +14,7 @@
                  [ring-cors "0.1.7"]
                  [com.cemerick/friend "0.2.1"]
                  [buddy "0.8.0"] ; all deps
+                 [com.draines/postal "1.11.3"]
                 ; [buddy/buddy-auth "0.7.0"]
                 ; [buddy/buddy-hashers "0.9.0"]
 ]
