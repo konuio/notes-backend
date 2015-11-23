@@ -97,21 +97,9 @@
 ;; Authorization: Token 123abc
 (defn parse-authorization-header
   [request]
-  (println " in parse header")
+  (println "logout attempt")
   (print request)
   (last (parse-header (get request :headers) "authorization")))
-;  (some->> (string/join " " (parse-header (get request :headers) "authorization"))
-;           (re-find (re-pattern (str "^" "Token" " (.+)$")))
-;           (second)))
-
-(defn logout
-  [request]
-  (if-not (authenticated? request)
-    (throw-unauthorized)
-    (let [token (parse-authorization-header request)]
-      (println (str "found token for logout " token))
-      (swap! tokens dissoc @tokens (keyword token))
-      (ok {:message (str "You have been signed out.")}))))
 
 (defn tokenAuthFxn
   [req token]
@@ -119,14 +107,12 @@
     user))
 
 ;; Create an instance of auth backend.
-
 (def auth-backend
   (token-backend {:authfn tokenAuthFxn}))
 
 ;; temp route to test buddy auth
 (defn testLoggedIn
   [request]
-
   (if-not (authenticated? request)
     (throw-unauthorized)
     (ok {:status "Logged" :message (str "hello logged user"
@@ -138,80 +124,63 @@
               :date (java.util.Date.)
               :version version})))
 
-;; (defn wrap-authentication [request fxn params]
-;;   (if-not (authenticated? request)
-;;     (throw-unauthorized)
-;;     (fxn params)))
+;; Helper fxn that should be wrapped with authentication.
+(defn logout
+  [request]
+  (let [token (parse-authorization-header request)]
+    (println (str "found token for logout " token))
+    (swap! tokens dissoc @tokens (keyword token))
+    (ok {:message (str "You have been signed out.")})))
 
-
-(defroutes app-routes
+(defroutes authorized-routes
 
   (POST "/note" request
-        (do
-          (println request)
-        (if-not (authenticated? request)
-          (throw-unauthorized)
-          (json (note/create-note (:params request))))))
+        (json (note/create-note (:params request))))
 
   (PUT "/note/:id" request
-       (if-not (authenticated? request)
-         (throw-unauthorized)
-         (json (note/update-note (get (:params request) :id) (dissoc (:params request) :id)))))
+       (json (note/update-note (get (:params request) :id) (dissoc (:params request) :id))))
 
   (GET "/note" request
-       (do
-         (println request)
-       (if-not (authenticated? request)
-         (throw-unauthorized)
-         (json (note/search-note (:params request))))))
+       (json (note/search-note (:params request))))
 
   (GET "/note/:id" request
-       (if-not (authenticated? request)
-         (throw-unauthorized)
-         (json (note/search-note (json {:_id (ObjectId. (:id (:params request)))})))))
+       (json (note/search-note (json {:_id (ObjectId. (:id (:params request)))}))))
 
   (DELETE "/note/:id" request
-          (if-not (authenticated? request)
-            (throw-unauthorized)
-            (do
+          (do
             (note/delete-note (:id (:params request)))
-            (json {:_id (:_id (:id (:params request)))}))))
+            (json {:_id (:_id (:id (:params request)))})))
 
   (POST "/notebook" request
-        (if-not (authenticated? (:params request))
-          (throw-unauthorized)
-          (json (notebook/create-notebook (:params request)))))
+        (json (notebook/create-notebook (:params request))))
 
   (PUT "/notebook/:id" request
-       (if-not (authenticated? request)
-         (throw-unauthorized)
-         (json (notebook/update-notebook (get (:params request) :id) (dissoc (:params request) :id)))))
+       (json (notebook/update-notebook (get (:params request) :id) (dissoc (:params request) :id))))
 
   (GET "/notebook" request
-       (if-not (authenticated? request)
-         (throw-unauthorized)
-         (json (notebook/search-notebook (:params request)))))
+       (json (notebook/search-notebook (:params request))))
 
   (GET "/notebook/:id" request
-       (if-not (authenticated? request)
-         (throw-unauthorized)
-         (json (notebook/search-notebook (json {:_id (ObjectId. (:id (:params request)))})))))
+       (json (notebook/search-notebook (json {:_id (ObjectId. (:id (:params request)))}))))
 
   (DELETE "/notebook/:id" request
-          (if-not (authenticated? request)
-            (throw-unauthorized)
-            (do
+          (do
             (notebook/delete-notebook (:id (:params request)))
-            (json {:_id (:_id (:id (:params request)))}))))
+            (json {:_id (:_id (:id (:params request)))})))
 
   (GET "/testLoggedIn" request
        (json (testLoggedIn request)))
-  ; Account creation with user-level privilege.
-  (POST "/user" {data :params}
-        (json (authentication/create-user data)))
 
   (POST "/logout" {:keys [headers params body] :as request}
         (json (logout request)))
+)
+
+
+(defroutes public-routes
+
+  ; Account creation with user-level privilege.
+  (POST "/user" {data :params}
+        (json (authentication/create-user data)))
 
   (GET "/" [] "Welcome to Konu Notes!")
 
@@ -219,7 +188,6 @@
 
   (POST "/login" {data :params}
         (login data))
-
 
   ; contexts /api/v2/ping etc.
   (context "/api" []
@@ -235,6 +203,28 @@
 
 (defn get-users [arg]
   (authentication/find-all-users))
+
+(defn authenticate-user [request]
+  (if-not (authenticated? request)
+    (throw-unauthorized)
+    ({:status "ok"}))) ;; TODO load the corresponding user id so functions can retrieve user data
+
+(defn wrap-custom-authentication [auth-fxn client-fxn]
+  (fn [request]
+    (do
+      (auth-fxn request)
+      (client-fxn request))))
+
+(defn wrap-auth [handler]
+  (fn [request]
+    (if (authenticated? request)
+      (handler request)
+      (throw-unauthorized))))
+
+(defroutes app-routes
+  (routes (-> authorized-routes
+              (wrap-routes wrap-auth))
+          public-routes ))
 
 (def app
   (->
