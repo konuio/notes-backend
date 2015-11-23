@@ -1,22 +1,24 @@
 (ns konu-notes.buddy_handler
   (:require
    [clojure.string :as string]
-   [compojure.handler :as handler]
-   [compojure.route :as route]
-   [ring.middleware.json :as middleware]
-   [ring.util.response :as ring]
-   [cheshire.core :as cheshire]
+   [konu-notes.app-state :as app-state]
    [konu-notes.note :as note]
+   [konu-notes.mapper :as mapper]
    [konu-notes.mailer :as mailer]
+   [konu-notes.signup :as signup]
    [konu-notes.authentication :as authentication]
    [konu-notes.notebook :as notebook]
-   [monger.json] ; Serialization support for Mongo types.
+   [compojure.handler :as handler]
+   [compojure.route :as route]
    [compojure.core :refer :all]
+   [ring.middleware.json :as middleware]
+   [ring.util.response :as ring]
    [ring.middleware.cors :refer [wrap-cors]]
    [ring.middleware.session :refer [wrap-session]]
    [ring.middleware.params :refer [wrap-params]]
    [ring.middleware.keyword-params :refer [wrap-keyword-params]]
-   [cemerick.friend [credentials :as creds]]
+   [cheshire.core :as cheshire]
+   [monger.json] ;; Serialization support for Mongo types.
    [buddy.hashers :as hashers]
    [buddy.auth.backends.token :refer [token-backend]]
    [buddy.core.nonce :as nonce]
@@ -26,7 +28,6 @@
    [buddy.auth.middleware :refer [wrap-authentication wrap-authorization]])
   (:import [org.bson.types ObjectId])
   (:gen-class))
-
 
 
 ;; TODO middleware for returning 401 not authorized
@@ -41,30 +42,11 @@
       ring/response
       (ring/content-type "application/json; charset=utf-8")))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Semantic response helpers
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defn ok [d] {:status 200 :body d})
 (defn bad-request [d] {:status 400 :body d})
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Token generator helpers
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn random-token
-  []
-  (let [randomdata (nonce/random-bytes 16)]
-    (codecs/bytes->hex randomdata)))
-
-;; Global var that stores valid users with their
-;; respective passwords. TODO temporary!
-
-(def authdata {:admin "secret"
-               :test "secret"})
-
-;; Global storage for store generated tokens.
-(def tokens (atom {}))
+(def session-tokens-coll "session-tokens")
 
 ;; Authentication handler.
 (defn login
@@ -72,7 +54,6 @@
   (print "in login method")
   (print (get request :username))
   (print (get request :password))
-  (print (creds/hash-bcrypt (get request :password)))
   (flush)
   (let [username (get request :username)
         password (get request :password)
@@ -85,31 +66,10 @@
                                                                                       (byte 0) (byte 1) (byte 2) (byte 3)
                                                                                       (byte 0) (byte 1) (byte 2) (byte 3)])}) })))]
     (if valid?
-      (let [token (random-token)]
-        (swap! tokens assoc (keyword token) (keyword username))
+      (let [token (authentication/random-token)]
+        (mapper/create session-tokens-coll {:token token :username username})
         (json-response {:token token} 200))
       (json-response {:message "Incorrect username or password."} 400))))
-
-(defn parse-header
-  [headers ^String header-name]
-  (first (filter #(.equalsIgnoreCase header-name (key %)) headers)))
-
-;; Expect an authorization header containing the following:
-;; Authorization: Token 123abc
-(defn parse-authorization-header
-  [request]
-  (println "logout attempt")
-  (print request)
-  (last (parse-header (get request :headers) "authorization")))
-
-(defn tokenAuthFxn
-  [req token]
-  (when-let [user (get @tokens (keyword token))]
-    user))
-
-;; Create an instance of auth backend.
-(def auth-backend
-  (token-backend {:authfn tokenAuthFxn}))
 
 ;; temp route to test buddy auth
 (defn testLoggedIn
@@ -125,12 +85,23 @@
               :date (java.util.Date.)
               :version version})))
 
+(defn parse-header
+  [headers ^String header-name]
+  (first (filter #(.equalsIgnoreCase header-name (key %)) headers)))
+
+;; Expect an authorization header containing the following:
+;; Authorization: Token 123abc
+(defn parse-authorization-header
+  [request]
+  (last (parse-header (get request :headers) "authorization")))
+
 ;; Helper fxn that should be wrapped with authentication.
 (defn logout
   [request]
   (let [token (parse-authorization-header request)]
     (println (str "found token for logout " token))
-    (swap! tokens dissoc @tokens (keyword token))
+    ;(swap! app-state/tokens dissoc app-state/get-tokens-state (keyword token))
+    (mapper/remove-from-collection session-tokens-coll {:token token})
     (ok {:message (str "You have been signed out.")})))
 
 (defroutes authorized-routes
@@ -138,7 +109,7 @@
   (POST "/note" request
         (json (note/create-note
                (assoc (:params request)
-                :username (name (:identity request))))))
+                :username (:identity request)))))
 
   (PUT "/note/:id" request
        (json (note/update-note (get (:params request) :id) (dissoc (:params request) :id))))
@@ -146,7 +117,7 @@
   (GET "/note" request
        (json (note/search-note
               (assoc (:params request)
-                :username (name (:identity request))))))
+                :username (:identity request)))))
 
   (GET "/note/:id" request
        (json (note/search-note (json {:_id (ObjectId. (:id (:params request)))}))))
@@ -159,7 +130,7 @@
   (POST "/notebook" request
         (json (notebook/create-notebook
                (assoc (:params request)
-                :username (name (:identity request))))))
+                :username (:identity request)))))
 
   (PUT "/notebook/:id" request
        (json (notebook/update-notebook (get (:params request) :id) (dissoc (:params request) :id))))
@@ -167,7 +138,7 @@
   (GET "/notebook" request
        (json (notebook/search-notebook
               (assoc (:params request)
-                :username (name (:identity request))))))
+                :username (:identity request)))))
 
   (GET "/notebook/:id" request
        (json (notebook/search-notebook (json {:_id (ObjectId. (:id (:params request)))}))))
@@ -187,9 +158,13 @@
 
 (defroutes public-routes
 
-
   (POST "/signup" {data :params}
-        (json (mailer/send-signup-email (:email data))))
+        (json (signup/signup {:email (:email data)
+                              :username (:username data)
+                              :password (:password data)})))
+
+  (POST "/redeem-signup" {data :params}
+        (json (signup/redeem-signup data)))
 
   ; Account creation with user-level privilege.
   (POST "/user" {data :params}
@@ -212,21 +187,16 @@
 
   ; nothing matched
   (route/not-found "Not Found")
-  )
+)
 
-(defn get-users [arg]
-  (authentication/find-all-users))
+(defn tokenAuthFxn
+  [req token]
+  (when-let [entry (mapper/search session-tokens-coll {:token token})]
+    (:username (first entry))))
 
-(defn authenticate-user [request]
-  (if-not (authenticated? request)
-    (throw-unauthorized)
-    ({:status "ok"}))) ;; TODO load the corresponding user id so functions can retrieve user data
-
-(defn wrap-custom-authentication [auth-fxn client-fxn]
-  (fn [request]
-    (do
-      (auth-fxn request)
-      (client-fxn request))))
+;; Create an instance of auth backend.
+(def auth-backend
+  (token-backend {:authfn tokenAuthFxn}))
 
 (defn wrap-auth [handler]
   (fn [request]
