@@ -135,13 +135,17 @@
 (defroutes authorized-routes
 
   (POST "/note" request
-        (json (note/create-note (:params request))))
+        (json (note/create-note
+               (assoc (:params request)
+                :username (name (:identity request))))))
 
   (PUT "/note/:id" request
        (json (note/update-note (get (:params request) :id) (dissoc (:params request) :id))))
 
   (GET "/note" request
-       (json (note/search-note (:params request))))
+       (json (note/search-note
+              (assoc (:params request)
+                :username (name (:identity request))))))
 
   (GET "/note/:id" request
        (json (note/search-note (json {:_id (ObjectId. (:id (:params request)))}))))
@@ -152,13 +156,17 @@
             (json {:_id (:_id (:id (:params request)))})))
 
   (POST "/notebook" request
-        (json (notebook/create-notebook (:params request))))
+        (json (notebook/create-notebook
+               (assoc (:params request)
+                :username (name (:identity request))))))
 
   (PUT "/notebook/:id" request
        (json (notebook/update-notebook (get (:params request) :id) (dissoc (:params request) :id))))
 
   (GET "/notebook" request
-       (json (notebook/search-notebook (:params request))))
+       (json (notebook/search-notebook
+              (assoc (:params request)
+                :username (name (:identity request))))))
 
   (GET "/notebook/:id" request
        (json (notebook/search-notebook (json {:_id (ObjectId. (:id (:params request)))}))))
@@ -230,7 +238,7 @@
   (->
    app-routes
    (wrap-authorization auth-backend)
-   (wrap-authentication auth-backend)
+   (wrap-authentication auth-backend) ;; Associates :identity in the request.
    (wrap-keyword-params)
    (wrap-params)
    (wrap-session)

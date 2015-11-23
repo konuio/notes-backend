@@ -36,7 +36,6 @@
 
 (defn create-user [newUser]
   (let [hashedUser {:username (get newUser :username)
-                    ; :password (creds/hash-bcrypt (get newUser :password))
                     :password (hashers/encrypt (get newUser :password)
                                                {:alg :bcrypt+sha512 :salt
                                                 (byte-array
