@@ -1,4 +1,4 @@
-(ns konu-notes.buddy_handler
+(ns konu-notes.handler
   (:require
    [clojure.string :as string]
    [konu-notes.app-state :as app-state]
