@@ -1,23 +1,27 @@
 (ns konu-notes.authentication
   (:require
    [konu-notes.mapper :as mapper]
+   [konu-notes.app-state :as app-state]
    [monger.json] ; Serialization support for Mongo types.
    [compojure.core :refer :all]
    [cheshire.core :as cheshire]
-   [cemerick.friend :as friend]
-   [cemerick.friend.workflows :refer [make-auth]]
-   (cemerick.friend [workflows :as workflows]
-                    [credentials :as creds])))
+   [buddy.hashers :as hashers]
+   [buddy.core.nonce :as nonce]
+   [buddy.core.codecs :as codecs]))
 
-; a dummy in-memory user "database" for testing purposes
-(def users {"root" {:username "root"
-                    :password (creds/hash-bcrypt "admin_password")
-                    :roles #{::admin}}
-            "jane" {:username "jane"
-                    :password (creds/hash-bcrypt "user_password")
-                    :roles #{::user}}})
 
-; Mapper functions for users and permissions
+(defn json-response [data & [status]]
+  {:status (or status 200)
+   :headers {"Content-Type" "application/json"}
+   :body (cheshire/generate-string data)})
+
+;; Token generator helper.
+(defn random-token
+  []
+  (let [randomdata (nonce/random-bytes 16)]
+    (codecs/bytes->hex randomdata)))
+
+;; Mapper functions for users and permissions.
 (def get-namespace
   "users")
 
@@ -27,6 +31,8 @@
 (def admin-role
   "admin")
 
+(def session-tokens-coll "session-tokens")
+
 (defn fetch-user [id]
   (mapper/fetch get-namespace id))
 
@@ -34,12 +40,19 @@
   (mapper/search get-namespace params))
 
 (defn create-user [newUser]
-  (let [hashedUser {:username (get newUser :username)
-                    :password (creds/hash-bcrypt (get newUser :password))
+  (let [hashedUser {:email (:email newUser)
+                    :username (:username newUser)
+                    :password (hashers/encrypt (:password newUser)
+                                               {:alg :bcrypt+sha512 :salt
+                                                (byte-array
+                                                 [(byte 0) (byte 1) (byte 2) (byte 3)
+                                                  (byte 0) (byte 1) (byte 2) (byte 3)
+                                                  (byte 0) (byte 1) (byte 2) (byte 3)
+                                                  (byte 0) (byte 1) (byte 2) (byte 3)])})
                     :roles user-role}]
 
     (print hashedUser)
-    (mapper/create get-namespace hashedUser)))
+    (mapper/create get-namespace hashedUser))) ;;TODO validate no duplicate usernames or emails
 
 (defn update-user [id data]
   (mapper/update get-namespace id data))
@@ -50,28 +63,21 @@
 (defn find-all-users []
   (mapper/find-all get-namespace))
 
-
-; Customize authentication.
-;; (defn do-login [req]
-;;   (let [credential-fn (get-in req [::friend/auth-config :credential-fn])]
-;;     (make-auth (credential-fn (select-keys (:params req) [:username :password])))))
-
-;; (defn password-workflow [req]
-;;   (when (and (= (:request-method req) :post)
-;;              (= (:uri req) "/login"))
-;;     (do-login req)))
-
 (defn get-user-by-username [username]
   (print (str "event=login_attempt, username=" username))
   (flush)
   (let [found-user (search-user {:username username})]
     (first found-user)))
 
-;; Customize credential fxn here.
-;; (defn password-credential-fn [creds-map]
-;;   (when-let [user (get-user-by-username (get creds-map :username))]
-;;     (print (str "event=login_success, username=" (get creds-map :username)))
-;;     (flush)
-;;     (when (= (:password user) (creds/hash-bcrypt (get creds-map :password)))
-;;       {:identity (:_id user) :roles #{::user} :user user})))
+(defn no-auth-login
+  "Login without a password (for use by backend)."
+  [params]
+  (let [username (:username params)
+        valid? (< 0 (count (search-user {:username username})))]
+    (if valid?
+      (let [token (random-token)]
+        (do
+          (mapper/create session-tokens-coll {:token token :username username})
+          (json-response {:token token} 200)))
+      (json-response {:message "User not found."} 400))))
 
