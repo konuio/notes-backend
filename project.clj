@@ -17,7 +17,7 @@
 ]
 
   :plugins [[lein-ring "0.9.7"]]
-  :ring {:handler konu-notes.buddy_handler/app}
+  :ring {:handler konu-notes.handler/app}
   :main konu-notes.server
   :profiles {:uberjar {:aot :all}
              :dev {:plugins [[lein2-eclipse "2.0.0"]

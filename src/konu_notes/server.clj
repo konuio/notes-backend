@@ -1,7 +1,6 @@
 (ns konu-notes.server
   (:require [ring.adapter.jetty :as jetty]
-            [konu-notes.buddy_handler :as handler]
-            [konu-notes.note :as note]
+            [konu-notes.handler :as handler]
             [konu-notes.mongo :as mongo]
             )
   (:gen-class))
