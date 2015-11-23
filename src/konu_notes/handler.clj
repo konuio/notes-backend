@@ -16,7 +16,8 @@
                     [credentials :as creds])
    [ring.middleware.session :refer [wrap-session]]
    [ring.middleware.params :refer [wrap-params]]
-   [ring.middleware.keyword-params :refer [wrap-keyword-params]])
+   [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+   [buddy.auth.backends.token :refer [token-backend]])
   (:import [org.bson.types ObjectId]))
 
 ;; TODO middleware for returning 401 not authorized
@@ -121,7 +122,9 @@
                                                    (when-let [found-user
                                                               (authentication/get-user-by-username id)]
                                                      found-user)))
-                         :workflows [(workflows/interactive-form)]
+                         :workflows [(workflows/interactive-form
+                                      :redirect-on-auth? false
+                                      :login-failure-handler (fn [req] {:body {:errors {:username ["invalid username or password"]}} :status 401}))]
                          :unauthenticated-handler (constantly {:status 401})})
 
    (wrap-keyword-params)
