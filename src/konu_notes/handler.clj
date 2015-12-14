@@ -8,6 +8,7 @@
    [konu-notes.signup :as signup]
    [konu-notes.authentication :as authentication]
    [konu-notes.notebook :as notebook]
+   [konu-notes.constants :as konu-constants]
    [compojure.handler :as handler]
    [compojure.route :as route]
    [compojure.core :refer :all]
@@ -45,8 +46,6 @@
 ;; Semantic response helpers
 (defn ok [d] {:status 200 :body d})
 (defn bad-request [d] {:status 400 :body d})
-
-(def session-tokens-coll "session-tokens")
 
 ;; Authentication handler.
 (defn login
@@ -102,7 +101,7 @@
   (let [token (parse-authorization-header request)]
     (println (str "found token for logout " token))
     ;(swap! app-state/tokens dissoc app-state/get-tokens-state (keyword token))
-    (mapper/remove-from-collection session-tokens-coll {:token token})
+    (mapper/remove-from-collection konu-constants/session-tokens-coll {:token token})
     (ok {:message (str "You have been signed out.")})))
 
 (defroutes authorized-routes
@@ -192,7 +191,7 @@
 
 (defn tokenAuthFxn
   [req token]
-  (when-let [entry (mapper/search session-tokens-coll {:token token})]
+  (when-let [entry (mapper/search konu-constants/session-tokens-coll {:token token})]
     (:username (first entry))))
 
 ;; Create an instance of auth backend.

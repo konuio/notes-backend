@@ -1,5 +1,6 @@
 (ns konu-notes.note
   (:require [konu-notes.mapper :as mapper]
+            [konu-notes.constants :as konu-constants]
             [monger.collection :as mc]
             [monger.core :as mg]
             [monger.conversion :as mconversion]
@@ -8,23 +9,21 @@
 
 
 ; Mapper methods for notes.
-(def get-namespace
-  "notes")
 
 (defn fetch-note [id]
-  (mapper/fetch get-namespace id))
+  (mapper/fetch konu-constants/notes-coll id))
 
 (defn search-note [params]
-  (mapper/search get-namespace params))
+  (mapper/search konu-constants/notes-coll params))
 
 (defn create-note [newPost]
-  (mapper/create get-namespace newPost))
+  (mapper/create konu-constants/notes-coll newPost))
 
 (defn update-note [id data]
-  (mapper/update get-namespace id data))
+  (mapper/update konu-constants/notes-coll id data))
 
 (defn delete-note [id]
-  (mapper/delete-by-id get-namespace id))
+  (mapper/delete-by-id konu-constants/notes-coll id))
 
 (defn find-all-notes []
-  (mapper/find-all get-namespace))
+  (mapper/find-all konu-constants/notes-coll))

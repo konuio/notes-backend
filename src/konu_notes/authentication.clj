@@ -1,5 +1,6 @@
 (ns konu-notes.authentication
   (:require
+   [konu-notes.constants :as konu-constants]
    [konu-notes.mapper :as mapper]
    [konu-notes.app-state :as app-state]
    [monger.json] ; Serialization support for Mongo types.
@@ -24,24 +25,19 @@
     (codecs/bytes->hex randomdata)))
 
 ;; Mapper functions for users and permissions.
-(def get-namespace
-  "users")
-
 (def user-role
   "user")
 
 (def admin-role
   "admin")
 
-(def session-tokens-coll "session-tokens")
-
 (defn fetch-user [id]
-  (mapper/fetch get-namespace id))
+  (mapper/fetch konu-constants/users-coll id))
 
 (defn search-user [params]
-  (mapper/search get-namespace params))
+  (mapper/search konu-constants/users-coll params))
 
-(defn create-user [newUser]
+(defn create-user-helper [newUser collection]
   (let [hashedUser {:email (:email newUser)
                     :username (:username newUser)
                     :password (hashers/encrypt (:password newUser)
@@ -54,16 +50,22 @@
                     :roles user-role}]
 
     (print hashedUser)
-    (mapper/create get-namespace hashedUser)))
+    (mapper/create collection hashedUser)))
+
+(defn create-user [newUser]
+  (create-user-helper newUser konu-constants/users-coll))
+
+(defn create-staged-user [newUser]
+  (create-user-helper newUser konu-constants/staged-users-coll))
 
 (defn update-user [id data]
-  (mapper/update get-namespace id data))
+  (mapper/update konu-constants/users-coll id data))
 
 (defn delete-user [id]
-  (mapper/delete-by-id get-namespace id))
+  (mapper/delete-by-id konu-constants/users-coll id))
 
 (defn find-all-users []
-  (mapper/find-all get-namespace))
+  (mapper/find-all konu-constants/users-coll))
 
 (defn get-user-by [query]
   (let [found-user (search-user query)]
@@ -75,7 +77,7 @@
   (get-user-by {:username username}))
 
 (defn create-session [token username]
-  (mapper/create session-tokens-coll {:token token :username username :lastActive (t/now)}))
+  (mapper/create konu-constants/session-tokens-coll {:token token :username username :lastActive (t/now)}))
 
 (defn no-auth-login
   "Login without a password (for use by backend)."
@@ -90,4 +92,4 @@
       (json-response {:message "User not found."} 400))))
 
 (defn update-last-active [token]
-  (mapper/update-by-query session-tokens-coll {:token token} {:$set {:lastActive (t/now)}}))
+  (mapper/update-by-query konu-constants/session-tokens-coll {:token token} {:$set {:lastActive (t/now)}}))

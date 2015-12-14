@@ -11,6 +11,7 @@
 (defn send-mail [info]
   ;; Info is a map containing :from, :to, :subject, :body.
   (do
+    (println "===========")
     (println get-server-info)
     (println info)
     (flush)
