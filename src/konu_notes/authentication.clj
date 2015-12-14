@@ -54,7 +54,7 @@
                     :roles user-role}]
 
     (print hashedUser)
-    (mapper/create get-namespace hashedUser))) ;;TODO validate no duplicate usernames or emails
+    (mapper/create get-namespace hashedUser)))
 
 (defn update-user [id data]
   (mapper/update get-namespace id data))
@@ -65,11 +65,14 @@
 (defn find-all-users []
   (mapper/find-all get-namespace))
 
+(defn get-user-by [query]
+  (let [found-user (search-user query)]
+    (first found-user)))
+
 (defn get-user-by-username [username]
   (print (str "event=login_attempt, username=" username))
   (flush)
-  (let [found-user (search-user {:username username})]
-    (first found-user)))
+  (get-user-by {:username username}))
 
 (defn create-session [token username]
   (mapper/create session-tokens-coll {:token token :username username :lastActive (t/now)}))
