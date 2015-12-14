@@ -25,9 +25,6 @@
     (codecs/bytes->hex randomdata)))
 
 ;; Mapper functions for users and permissions.
-(def get-namespace
-  "users")
-
 (def user-role
   "user")
 
@@ -35,10 +32,10 @@
   "admin")
 
 (defn fetch-user [id]
-  (mapper/fetch get-namespace id))
+  (mapper/fetch konu-constants/users-coll id))
 
 (defn search-user [params]
-  (mapper/search get-namespace params))
+  (mapper/search konu-constants/users-coll params))
 
 (defn create-user-helper [newUser collection]
   (let [hashedUser {:email (:email newUser)
@@ -62,13 +59,13 @@
   (create-user-helper newUser konu-constants/staged-users-coll))
 
 (defn update-user [id data]
-  (mapper/update get-namespace id data))
+  (mapper/update konu-constants/users-coll id data))
 
 (defn delete-user [id]
-  (mapper/delete-by-id get-namespace id))
+  (mapper/delete-by-id konu-constants/users-coll id))
 
 (defn find-all-users []
-  (mapper/find-all get-namespace))
+  (mapper/find-all konu-constants/users-coll))
 
 (defn get-user-by-username [username]
   (print (str "event=login_attempt, username=" username))

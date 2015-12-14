@@ -1,6 +1,7 @@
 (ns konu-notes.notebook
   (:require [konu-notes.mapper :as mapper]
             [konu-notes.note :as note]
+            [konu-notes.constants :as konu-constants]
             [monger.collection :as mc]
             [monger.core :as mg]
             [monger.conversion :as mconversion]
@@ -9,25 +10,23 @@
 
 
 ; Mapper methods for notebooks.
-(def get-namespace
-  "notebooks")
 
 (defn fetch-notebook [id]
-  (mapper/fetch get-namespace id))
+  (mapper/fetch konu-constants/notebooks-coll id))
 
 (defn search-notebook [params]
-  (mapper/search get-namespace params))
+  (mapper/search konu-constants/notebooks-coll params))
 
 (defn create-notebook [newPost]
-  (mapper/create get-namespace newPost))
+  (mapper/create konu-constants/notebooks-coll newPost))
 
 (defn update-notebook [id data]
-  (mapper/update get-namespace id data))
+  (mapper/update konu-constants/notebooks-coll id data))
 
 (defn delete-notebook [id]
-  (mapper/delete-by-id get-namespace id)
+  (mapper/delete-by-id konu-constants/notebooks-coll id)
   ; Delete associated notes.
-  (mapper/remove-from-collection note/get-namespace {:notebook id}))
+  (mapper/remove-from-collection konu-constants/notes-coll {:notebook id}))
 
 (defn find-all-notebooks []
-  (mapper/find-all get-namespace))
+  (mapper/find-all konu-constants/notebooks-coll))
