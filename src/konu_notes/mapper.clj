@@ -42,7 +42,7 @@
    :err))
 
 (defn delete-by-id [collection id]
-  (mc/remove-by-id collection (ObjectId. id)))
+  (mc/remove-by-id collection (mconversion/to-object-id id)))
 
 (defn remove-from-collection [collection params]
   (mc/remove collection params))

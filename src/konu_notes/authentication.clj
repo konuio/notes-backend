@@ -1,5 +1,6 @@
 (ns konu-notes.authentication
   (:require
+   [konu-notes.constants :as konu-constants]
    [konu-notes.mapper :as mapper]
    [konu-notes.app-state :as app-state]
    [monger.json] ; Serialization support for Mongo types.
@@ -31,15 +32,13 @@
 (def admin-role
   "admin")
 
-(def session-tokens-coll "session-tokens")
-
 (defn fetch-user [id]
   (mapper/fetch get-namespace id))
 
 (defn search-user [params]
   (mapper/search get-namespace params))
 
-(defn create-user [newUser]
+(defn create-user-helper [newUser collection]
   (let [hashedUser {:email (:email newUser)
                     :username (:username newUser)
                     :password (hashers/encrypt (:password newUser)
@@ -52,7 +51,13 @@
                     :roles user-role}]
 
     (print hashedUser)
-    (mapper/create get-namespace hashedUser))) ;;TODO validate no duplicate usernames or emails
+    (mapper/create collection hashedUser))) ;;TODO validate no duplicate usernames or emails
+
+(defn create-user [newUser]
+  (create-user-helper newUser konu-constants/users-coll))
+
+(defn create-staged-user [newUser]
+  (create-user-helper newUser konu-constants/staged-users-coll))
 
 (defn update-user [id data]
   (mapper/update get-namespace id data))
@@ -77,7 +82,7 @@
     (if valid?
       (let [token (random-token)]
         (do
-          (mapper/create session-tokens-coll {:token token :username username})
+          (mapper/create konu-constants/session-tokens-coll {:token token :username username})
           (json-response {:token token} 200)))
       (json-response {:message "User not found."} 400))))
 
