@@ -14,3 +14,11 @@ db.users.createIndex({username: 1}, {unique: true})
 
 // staged_users capped collection
 db.createCollection('staged_users', {capped: true, size: 5120000, max: 5000})
+
+// Disallow duplicate staged emails
+db.staged_users.createIndex({email: 1}, {unique: true})
+
+// Disallow duplicate staged usernames
+db.staged_users.createIndex({username: 1}, {unique: true})
+
+
