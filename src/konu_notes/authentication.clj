@@ -8,7 +8,9 @@
    [cheshire.core :as cheshire]
    [buddy.hashers :as hashers]
    [buddy.core.nonce :as nonce]
-   [buddy.core.codecs :as codecs]))
+   [buddy.core.codecs :as codecs]
+   [clj-time.core :as t]
+   monger.joda-time))
 
 
 (defn json-response [data & [status]]
@@ -74,6 +76,9 @@
   (let [found-user (search-user {:username username})]
     (first found-user)))
 
+(defn create-session [token username]
+  (mapper/create konu-constants/session-tokens-coll {:token token :username username :lastActive (t/now)}))
+
 (defn no-auth-login
   "Login without a password (for use by backend)."
   [params]
@@ -82,7 +87,9 @@
     (if valid?
       (let [token (random-token)]
         (do
-          (mapper/create konu-constants/session-tokens-coll {:token token :username username})
+          (create-session token username)
           (json-response {:token token} 200)))
       (json-response {:message "User not found."} 400))))
 
+(defn update-last-active [token]
+  (mapper/update-by-query session-tokens-coll {:token token} {:$set {:lastActive (t/now)}}))

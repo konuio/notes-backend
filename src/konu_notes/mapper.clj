@@ -41,6 +41,9 @@
    (mc/update-by-id collection (ObjectId. id) (dissoc data :_id))
    :err))
 
+(defn update-by-query [collection conditions document]
+  (mc/update collection conditions document))
+
 (defn delete-by-id [collection id]
   (mc/remove-by-id collection (mconversion/to-object-id id)))
 

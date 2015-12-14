@@ -14,6 +14,7 @@
                  [com.cemerick/friend "0.2.1"]
                  [buddy "0.8.0"] ; all deps
                  [com.draines/postal "1.11.3"]
+                 [clj-time "0.11.0"]
 ]
 
   :plugins [[lein-ring "0.9.7"]]

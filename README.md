@@ -2,7 +2,11 @@
 
 ## Development
 
-try `lein eclipse`or `lein idea`.
+Try `lein eclipse`or `lein idea`.
+
+To initialize Mongo, run:
+
+    mongo development scripts/setup_mongo.js
 
 ## Running
 
