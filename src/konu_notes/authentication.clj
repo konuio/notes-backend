@@ -50,7 +50,7 @@
                     :roles user-role}]
 
     (print hashedUser)
-    (mapper/create collection hashedUser))) ;;TODO validate no duplicate usernames or emails
+    (mapper/create collection hashedUser)))
 
 (defn create-user [newUser]
   (create-user-helper newUser konu-constants/users-coll))
@@ -67,11 +67,14 @@
 (defn find-all-users []
   (mapper/find-all konu-constants/users-coll))
 
+(defn get-user-by [query]
+  (let [found-user (search-user query)]
+    (first found-user)))
+
 (defn get-user-by-username [username]
   (print (str "event=login_attempt, username=" username))
   (flush)
-  (let [found-user (search-user {:username username})]
-    (first found-user)))
+  (get-user-by {:username username}))
 
 (defn create-session [token username]
   (mapper/create konu-constants/session-tokens-coll {:token token :username username :lastActive (t/now)}))
@@ -89,4 +92,4 @@
       (json-response {:message "User not found."} 400))))
 
 (defn update-last-active [token]
-  (mapper/update-by-query session-tokens-coll {:token token} {:$set {:lastActive (t/now)}}))
+  (mapper/update-by-query konu-constants/session-tokens-coll {:token token} {:$set {:lastActive (t/now)}}))
