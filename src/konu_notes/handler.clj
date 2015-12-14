@@ -67,7 +67,7 @@
                                                                                       (byte 0) (byte 1) (byte 2) (byte 3)])}) })))]
     (if valid?
       (let [token (authentication/random-token)]
-        (mapper/create session-tokens-coll {:token token :username username})
+        (authentication/create-session token username)
         (json-response {:token token} 200))
       (json-response {:message "Incorrect username or password."} 400))))
 
@@ -93,7 +93,8 @@
 ;; Authorization: Token 123abc
 (defn parse-authorization-header
   [request]
-  (last (parse-header (get request :headers) "authorization")))
+  (let [value (last (parse-header (get request :headers) "authorization"))]
+    (last (clojure.string/split value #"\s+"))))
 
 ;; Helper fxn that should be wrapped with authentication.
 (defn logout
@@ -201,7 +202,9 @@
 (defn wrap-auth [handler]
   (fn [request]
     (if (authenticated? request)
-      (handler request)
+      (do
+        (authentication/update-last-active (parse-authorization-header request))
+        (handler request))
       (throw-unauthorized))))
 
 (defroutes app-routes
