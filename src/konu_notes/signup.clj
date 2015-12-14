@@ -18,10 +18,14 @@
     ))
 
 (defn signup [new-user]
-  "Creates new user and sends a registraion email."
-  (do
-    (let [hashed-user (authentication/create-user new-user)]
-      (let [signup-token (create-signup-token hashed-user)]
+  "Creates new user and sends a registration email."
+  (let [username-user (authentication/get-user-by-username (:username new-user))
+        email-user (authentication/get-user-by {:email (:email new-user)})]
+    (cond
+      username-user {:error :duplicate-username}
+      email-user {:error :duplicate-email}
+      :else (let [hashed-user (authentication/create-user new-user)
+                  signup-token (create-signup-token hashed-user)]
         (mailer/send-mail {:from (:email-from config/config)
                            :to (:email new-user)
                            :subject "Konu Notes Registration"
