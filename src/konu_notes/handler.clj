@@ -223,6 +223,6 @@
    (middleware/wrap-json-body {:keywords? true :bigdecimals? true})
    middleware/wrap-json-params
    ;; Allow origin.
-   (wrap-cors :access-control-allow-origin #"http://localhost:8888"
+   (wrap-cors :access-control-allow-origin #"http://localhost:8888|https://konu.io"
               :access-control-allow-methods [:get :put :post :delete])))
 
