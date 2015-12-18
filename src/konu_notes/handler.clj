@@ -164,7 +164,7 @@
                               :password (:password data)})))
 
   (POST "/redeem-signup" {data :params}
-        (json (signup/redeem-signup data)))
+    (signup/redeem-signup data))
 
   ; Account creation with user-level privilege.
   (POST "/user" {data :params}
