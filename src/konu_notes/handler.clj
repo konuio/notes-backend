@@ -164,7 +164,7 @@
                               :password (:password data)})))
 
   (POST "/redeem-signup" {data :params}
-        (json (signup/redeem-signup data)))
+    (signup/redeem-signup data))
 
   ; Account creation with user-level privilege.
   (POST "/user" {data :params}
@@ -223,6 +223,6 @@
    (middleware/wrap-json-body {:keywords? true :bigdecimals? true})
    middleware/wrap-json-params
    ;; Allow origin.
-   (wrap-cors :access-control-allow-origin #"http://localhost:8888"
+   (wrap-cors :access-control-allow-origin #"http://localhost:8888|https://konu.io"
               :access-control-allow-methods [:get :put :post :delete])))
 
